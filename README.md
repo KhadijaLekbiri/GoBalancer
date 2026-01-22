@@ -184,16 +184,17 @@ curl -X DELETE http://localhost:8081/backends \
 
 ```
 reverse-proxy/
-├── main.go                 # Entry point
+├── Client.go                 # Entry point
 ├── config.json            # Configuration file
 ├── TODO.md               # Development milestones
-├── internal/
+├── README.md
+├── services/
 │   ├── models/           # Data structures and interfaces
-│   │   ├── backend.go
-│   │   ├── pool.go
-│   │   └── config.go
+│   │   ├── Backend.go
+│   │   ├── ServerPool.go
+│   │   └── ProxyConfig.go
 │   ├── proxy/            # Proxy handler logic
-│   │   └── handler.go
+│   │   └── Handler.go
 │   ├── health/           # Health checking system
 │   │   └── checker.go
 │   └── admin/            # Admin API handlers
@@ -248,20 +249,9 @@ hey -n 10000 -c 100 http://localhost:8080/
 
 ## 🎯 Project Status
 
-✅ **Completed** - All core features implemented and tested
+✅ **In Progress** - All core features implemented and tested
 
 See [TODO.md](TODO.md) for detailed development milestones and progress tracking.
-
-## 📚 Learning Outcomes
-
-Through this project, I gained hands-on experience with:
-
-- **Concurrency Patterns**: Goroutines, channels, and synchronization primitives
-- **Thread Safety**: Proper use of `sync.Mutex`, `sync.RWMutex`, and `sync/atomic`
-- **HTTP Programming**: Building robust HTTP servers and clients
-- **Context Management**: Propagating context for cancellation and timeouts
-- **System Design**: Architecting a distributed system component
-- **Testing**: Unit tests, integration tests, and race condition detection
 
 ## 🚀 Future Enhancements
 
