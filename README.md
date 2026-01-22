@@ -62,7 +62,7 @@ This is my final project for an **Introduction to Go** course, demonstrating adv
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/reverse-proxy.git
+git clone https://github.com/KhadijaLekbiri/GoBalancer.git
 cd reverse-proxy
 
 # Initialize Go modules
