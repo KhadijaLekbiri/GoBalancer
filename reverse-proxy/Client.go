@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
+	// "io"
 	"log"
-	"net/http"
+	// "net/http"
 	"reverse-proxy/services/models"
+	"reverse-proxy/services/proxy"
 	"os"
 	"flag"
+	"sync"
 )
 
 type State struct {
@@ -17,7 +19,17 @@ type State struct {
 	backends [] models.Backend
 }
 
+// var Proxy = struct {
+// 					Port  int
+// 					Strategy string
+// 					Health_check_frequency string
+// 					Backends []string
+// 					Admin_port int
+// 					Request_timeout string
+// 						}{}
+
 func main() {
+	var wg sync.WaitGroup
 
 	result := flag.String("config","","a path to config")
 	
@@ -31,33 +43,37 @@ func main() {
 
 	data, _ := os.ReadFile(*result)
 
-	proxy := struct {
-						Port  int
-						Strategy string
-						Health_check_frequency string
-						Backends []string
-						Admin_port int
-						Request_timeout string
-						}{}
-
-	err := json.Unmarshal(data, &proxy)
+	initial_proxy := models.ProxyConfig{}
+	err := json.Unmarshal(data, &initial_proxy)
 	if err != nil {
 		log.Fatal(err)
 	}				
 
-	fmt.Println(proxy)
+	fmt.Println(initial_proxy.Strategy)
 
-	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/status",proxy.Admin_port))
-	if err != nil {
-		log.Fatal(err)
-	}
+	wg.Add(1)
 
-	defer resp.Body.Close()
+	go func (){
+			proxy.StartProxy(initial_proxy)
+			defer wg.Done()
+		}()
 
-	bytes, err := io.ReadAll(resp.Body)
+	wg.Wait()
 
-	state := State{}
-	err = json.Unmarshal(bytes, &state)
+	fmt.Println("hani")
+	
+	
+	// resp, err := http.Get(fmt.Sprintf("http://localhost:%d/status",proxy.Admin_port))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// defer resp.Body.Close()
+
+	// bytes, err := io.ReadAll(resp.Body)
+
+	// state := State{}
+	// err = json.Unmarshal(bytes, &state)
 		
-	fmt.Println(state)
+	// fmt.Println(state)
 }
