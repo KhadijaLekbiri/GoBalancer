@@ -1,12 +1,5 @@
 {
   "Port": 8080,
   "Strategy": "round-robin",
-  "Health_check_frequency": "30s",
-  "Backends": [
-    "http://localhost:8082",
-    "http://localhost:8083",
-    "http://localhost:8084"
-  ],
-  "Admin_port":  8081,
-  "Request_timeout": "10s"
+  "Admin_port":  8081
 }
