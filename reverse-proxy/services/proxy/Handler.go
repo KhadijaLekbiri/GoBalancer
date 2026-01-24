@@ -1,14 +1,15 @@
 package proxy
 
 import (
-	"encoding/json"
+	// "encoding/json"
 	"fmt"
-	"log"
+	// "io"
+	// "log"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
-	"sync"
-	"io"
 	"reverse-proxy/services/models"
+	"sync"
 	// "flag"
 )
 
@@ -17,7 +18,6 @@ import (
 // func HandleGet(w http.ResponseWriter, _ *http.Request){
 
 // 	fmt.Printf("helooooooo")
-
 
 // 	fmt.Println("oplaaa")
 
@@ -45,6 +45,14 @@ import (
 // 	}
 // }
 
+type Handler struct{
+	proxy *httputil.ReverseProxy
+}
+
+func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request){  
+	h.proxy.ServeHTTP(w,r)
+}
+
 func StartProxy(proxy models.ProxyConfig) {
 	var wg sync.WaitGroup
 
@@ -66,31 +74,21 @@ func StartProxy(proxy models.ProxyConfig) {
 	wg.Add(1)
 
 	go func (){
+		selected_backend := server_pool.Backends[server_pool.Current]
+
 		defer wg.Done()
 
-		http.HandleFunc("/api",
-		func(w http.ResponseWriter, r *http.Request) {
-				selected_backend := server_pool.Backends[server_pool.Current]
+		director := func (req *http.Request){
+			req.URL.Scheme = selected_backend.URL.Scheme
+			req.URL.Host = selected_backend.URL.Host
+		}
+		
+		reverse_proxy := &httputil.ReverseProxy{Director: director}
+		handler := Handler{proxy: reverse_proxy}
 
-				fmt.Println("Url of the selected active backend: ",selected_backend.URL.String()) 
-				
-					resp, err := http.Get(selected_backend.URL.String())
-					if err != nil {
-						log.Fatal(err)
-					}
+		fmt.Println("Url of the selected active backend: ",selected_backend.URL.String()) 
 
-					defer resp.Body.Close()
-
-					bytes, err := io.ReadAll(resp.Body)
-
-					result := []string{}
-
-					_  = json.Unmarshal(bytes,&result)
-					if err != nil {
-						log.Fatal(err)}
-
-				w.Write(bytes)
-			})
+		http.Handle("/api", handler)
 		http.ListenAndServe(fmt.Sprintf(":%d",proxy.Port),nil)	
 	}()
 
@@ -103,3 +101,30 @@ func StartProxy(proxy models.ProxyConfig) {
 	
 	// http.ListenAndServe(fmt.Sprintf(":%d",proxy.Port),nil)
 }
+
+
+
+
+
+
+// SOME OLD STUFF 
+// func(w http.ResponseWriter, r *http.Request) {
+
+				
+// 					resp, err := http.Get(selected_backend.URL.String())
+// 					if err != nil {
+// 						log.Fatal(err)
+// 					}
+
+// 					defer resp.Body.Close()
+
+// 					bytes, err := io.ReadAll(resp.Body)
+
+// 					result := []string{}
+
+// 					_  = json.Unmarshal(bytes,&result)
+// 					if err != nil {
+// 						log.Fatal(err)}
+
+// 				w.Write(bytes)
+// 			}
