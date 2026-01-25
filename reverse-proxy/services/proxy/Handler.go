@@ -4,12 +4,9 @@ import (
 	// "encoding/json"
 	"fmt"
 	// "io"
-	// "log"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"reverse-proxy/services/models"
-	"sync"
 	// "flag"
 )
 
@@ -53,52 +50,42 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 	h.proxy.ServeHTTP(w,r)
 }
 
+
+
 func StartProxy(proxy models.ProxyConfig) {
-	var wg sync.WaitGroup
 
 	fmt.Println("llllollllllll")
 
-	parsedUrl, _ := url.Parse("http://localhost:8082");
 
 	server_pool := models.ServerPool {
-			Backends: []*models.Backend{{
-				URL: parsedUrl,
-				Alive: true,
-				CurrentConns: 0,
-			}},
-			Current: uint64(0),
+			Backends: models.Backends(),
+			Current: ^uint64(0) , // max unit64 + 1 gives 0 thanks to the overflow
 		}
-	if len(server_pool.Backends) == 0 {
-
-	}
-	wg.Add(1)
-
-	go func (){
-		selected_backend := server_pool.Backends[server_pool.Current]
-
-		defer wg.Done()
-
-		director := func (req *http.Request){
-			req.URL.Scheme = selected_backend.URL.Scheme
-			req.URL.Host = selected_backend.URL.Host
-		}
-		
-		reverse_proxy := &httputil.ReverseProxy{Director: director}
-		handler := Handler{proxy: reverse_proxy}
-
-		fmt.Println("Url of the selected active backend: ",selected_backend.URL.String()) 
-
-		http.Handle("/api", handler)
-		http.ListenAndServe(fmt.Sprintf(":%d",proxy.Port),nil)	
-	}()
-
-	wg.Wait()
-	// go func (){
-	// 	http.HandleFunc("/status",Handler)
-	// 	http.ListenAndServe(fmt.Sprintf(":%d",proxy.Admin_port),nil)
-	// }()
 
 	
+	director := func (req *http.Request){
+		selected_backend := server_pool.GetNextValidPeer()
+
+		req.URL.Scheme = selected_backend.URL.Scheme
+		req.URL.Host = selected_backend.URL.Host
+		
+		fmt.Println("Url of the selected active backend: ",selected_backend.URL.String()) 
+
+	}
+
+	reverse_proxy := &httputil.ReverseProxy{Director: director}
+	handler := Handler{proxy: reverse_proxy}
+
+
+	http.Handle("/api", handler)
+	http.ListenAndServe(fmt.Sprintf(":%d",proxy.Port),nil)	
+
+// go func (){
+// 	http.HandleFunc("/status",Handler)
+// 	http.ListenAndServe(fmt.Sprintf(":%d",proxy.Admin_port),nil)
+// }()
+
+
 	// http.ListenAndServe(fmt.Sprintf(":%d",proxy.Port),nil)
 }
 

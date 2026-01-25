@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"reverse-proxy/servers"
 	"reverse-proxy/services/models"
 	"sync"
 )
@@ -19,7 +18,7 @@ import (
 func main(){
 	var wg sync.WaitGroup
 
-	backends := servers.Backends()
+	backends := models.Backends()
 	
 	for i, backend := range backends {
 		if backend.Alive {
