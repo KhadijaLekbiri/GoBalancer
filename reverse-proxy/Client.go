@@ -2,15 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
-	// "io"
 	"log"
-	// "net/http"
+	"net/http"
+	"os"
 	"reverse-proxy/services/models"
 	"reverse-proxy/services/proxy"
-	"os"
-	"flag"
 	"sync"
+	"time"
 )
 
 type State struct {
@@ -27,6 +27,34 @@ type State struct {
 // 					Admin_port int
 // 					Request_timeout string
 // 						}{}
+
+func Healthcheck(server_pool *models.ServerPool){
+	// here we could assume that we go through the backends and ping them
+
+	for i, backend := range server_pool.Backends {
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+
+		go func (b *models.Backend) {
+			defer wg.Done()
+
+			client := &http.Client{Timeout: 2*time.Second}
+			resp, err :=  client.Get(b.URL.String())
+			
+			alive := err == nil && resp.StatusCode >= 200 && resp.StatusCode < 400
+			fmt.Println("Backend",i, "is: ",alive)
+			b.SetAlive(alive)
+			
+			if err == nil {
+				resp.Body.Close()
+			}
+			
+		}(backend)
+
+		wg.Wait()
+	}
+}
 
 func main() {
 	var wg sync.WaitGroup
@@ -51,13 +79,28 @@ func main() {
 
 	fmt.Println(initial_proxy.Strategy)
 
+	server_pool := models.ServerPool {
+			Backends: models.Backends(),
+			Current: ^uint64(0) , // max unit64 + 1 gives 0 thanks to the overflow
+		}
 	wg.Add(1)
 
 	go func (){
-			proxy.StartProxy(initial_proxy)
+			proxy.StartProxy(initial_proxy, &server_pool)
 			defer wg.Done()
 		}()
 
+	wg.Add(1)
+
+	go func (){
+		defer wg.Done()
+		ticker := time.NewTicker(10*time.Second)
+
+		for range ticker.C {
+			Healthcheck(&server_pool)
+		}
+	}()
+	
 	wg.Wait()
 
 	fmt.Println("hani")
