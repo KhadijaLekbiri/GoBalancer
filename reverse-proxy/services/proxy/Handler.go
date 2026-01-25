@@ -31,15 +31,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 
 
 
-func StartProxy(proxy models.ProxyConfig) {
+func StartProxy(proxy models.ProxyConfig, server_pool *models.ServerPool) {
 
 	fmt.Println("Proxy starts! ")
-
-
-	server_pool := models.ServerPool {
-			Backends: models.Backends(),
-			Current: ^uint64(0) , // max unit64 + 1 gives 0 thanks to the overflow
-		}
 
 	
 	director := func (req *http.Request){
@@ -55,7 +49,7 @@ func StartProxy(proxy models.ProxyConfig) {
 
 	handler := Handler{
 		proxy: reverse_proxy,
-		pool: &server_pool,
+		pool: server_pool,
 	}
 
 
