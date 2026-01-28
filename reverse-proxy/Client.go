@@ -14,22 +14,10 @@ import (
 	"time"
 )
 
-type State struct {
-	Total_backends int
-	Active_backends int
-	Backends [] models.Backend
-}
 
-// var Proxy = struct {
-// 					Port  int
-// 					Strategy string
-// 					Health_check_frequency string
-// 					Backends []string
-// 					Admin_port int
-// 					Request_timeout string
-// 						}{}
 
-func Healthcheck(server_pool *models.ServerPool){
+
+func Healthcheck(server_pool *models.ServerPool, timeout time.Duration){
 	// here we could assume that we go through the backends and ping them
 
 	for i, backend := range server_pool.Backends {
@@ -40,7 +28,7 @@ func Healthcheck(server_pool *models.ServerPool){
 		go func (b *models.Backend) {
 			defer wg.Done()
 
-			client := &http.Client{Timeout: 2*time.Second}
+			client := &http.Client{Timeout: timeout}
 			resp, err :=  client.Get(b.URL.String())
 			
 			alive := err == nil && resp.StatusCode >= 200 && resp.StatusCode < 400
@@ -74,6 +62,10 @@ func main() {
 
 	initial_proxy := models.ProxyConfig{}
 	err := json.Unmarshal(data, &initial_proxy)
+
+	initial_proxy.HealthCheckFreq = 10*time.Second
+	initial_proxy.Timeout = 2*time.Second
+
 	if err != nil {
 		log.Fatal(err)
 	}				
@@ -95,10 +87,10 @@ func main() {
 
 	go func (){
 		defer wg.Done()
-		ticker := time.NewTicker(10*time.Second)
+		ticker := time.NewTicker(initial_proxy.HealthCheckFreq)
 
 		for range ticker.C {
-			Healthcheck(&server_pool)
+			Healthcheck(&server_pool,initial_proxy.Timeout)
 		}
 	}()
 	
