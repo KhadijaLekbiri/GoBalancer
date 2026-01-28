@@ -9,14 +9,15 @@ import (
 	"os"
 	"reverse-proxy/services/models"
 	"reverse-proxy/services/proxy"
+	"reverse-proxy/services/admin"
 	"sync"
 	"time"
 )
 
 type State struct {
-	total_backends int
-	active_backends int
-	backends [] models.Backend
+	Total_backends int
+	Active_backends int
+	Backends [] models.Backend
 }
 
 // var Proxy = struct {
@@ -101,22 +102,34 @@ func main() {
 		}
 	}()
 	
+
+	wg.Add(1)
+
+	go func (){
+		admin.CheckStatus(&server_pool)
+		defer wg.Done()
+	}()
+
+	wg.Add(1)
+
+	go func (){
+		defer wg.Done()
+		ticker2 := time.NewTicker(20*time.Second)
+
+		for range ticker2.C {
+			backend := &models.Backend{
+				URL:          models.Must(fmt.Sprintf("http://localhost:%d",8087)),
+				Alive:        true,
+				CurrentConns: 0,
+			}
+			server_pool.AddBackend(backend)
+		}
+	}()
 	wg.Wait()
+
+
 
 	fmt.Println("hani")
 	
-	
-	// resp, err := http.Get(fmt.Sprintf("http://localhost:%d/status",proxy.Admin_port))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
 
-	// defer resp.Body.Close()
-
-	// bytes, err := io.ReadAll(resp.Body)
-
-	// state := State{}
-	// err = json.Unmarshal(bytes, &state)
-		
-	// fmt.Println(state)
 }
