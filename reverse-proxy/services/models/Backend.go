@@ -24,6 +24,13 @@ func (b *Backend) SetAlive(alive bool)  {
 	defer b.mux.Unlock()
 	b.Alive = alive
 }
+
+func (b *Backend) AddConnection()  {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+	b.CurrentConns++
+}
+
 //  This Must function get ride of the err and only return the url we want
 
 func Must(rawURL string) *url.URL {
