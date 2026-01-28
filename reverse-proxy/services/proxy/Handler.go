@@ -24,6 +24,7 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request){
 		return
 	}
 
+	backend.AddConnection()
 	ctx := context.WithValue(r.Context(),"backend",backend)
 
 	h.proxy.ServeHTTP(w,r.WithContext(ctx))
