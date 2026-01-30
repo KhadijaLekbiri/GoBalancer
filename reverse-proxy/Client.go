@@ -17,11 +17,19 @@ import (
 
 
 
-func Healthcheck(server_pool *models.ServerPool, timeout time.Duration){
+func Healthcheck(server_pool *models.ServerPool, timeout time.Duration) {
 	// here we could assume that we go through the backends and ping them
 
-	for i, backend := range server_pool.Backends {
-		var wg sync.WaitGroup
+	server_pool.Mux.RLock()
+
+	backends := make([]*models.Backend, len(server_pool.Backends))
+	copy(backends,server_pool.Backends)
+
+	server_pool.Mux.RUnlock()
+		
+	var wg sync.WaitGroup
+
+	for i, backend := range backends {
 
 		wg.Add(1)
 
@@ -40,9 +48,8 @@ func Healthcheck(server_pool *models.ServerPool, timeout time.Duration){
 			}
 			
 		}(backend)
-
-		wg.Wait()
 	}
+	wg.Wait()
 }
 
 func main() {
@@ -109,7 +116,7 @@ func main() {
 		ticker2 := time.NewTicker(20*time.Second)
 
 		for range ticker2.C {
-			backend := &models.Backend{
+			backend := &models.Backend {
 				URL:          models.Must(fmt.Sprintf("http://localhost:%d",8087)),
 				Alive:        true,
 				CurrentConns: 0,
