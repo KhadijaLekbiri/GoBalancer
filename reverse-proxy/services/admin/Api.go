@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"reverse-proxy/services/models"
@@ -33,7 +32,10 @@ type BackendResponse struct {
 
 func (api *API) HandleGet(w http.ResponseWriter, _ *http.Request){
 	fmt.Printf("helooooooo")
-
+	
+	api.Pool.Mux.RLock()
+	defer api.Pool.Mux.RUnlock()
+	
 	backends := api.Pool.Backends
 
 	state := StateResponse {
@@ -56,7 +58,7 @@ func (api *API) HandleGet(w http.ResponseWriter, _ *http.Request){
 
 	jsonResp , err := json.MarshalIndent(state,"","	")
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
 	w.Header().Set("Content-Type","application/json")
@@ -72,7 +74,8 @@ func (api *API) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	err = json.Unmarshal([]byte(body), &new_url)
@@ -91,6 +94,48 @@ func (api *API) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func  (api *API) HandleDelete(w http.ResponseWriter, r *http.Request){
+	fmt.Println("hhh deleted")
+
+	new_url := struct {
+		Url string  `json:"url"`}{
+			Url: "",
+		}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = json.Unmarshal([]byte(body), &new_url)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	parsedURL, err := url.ParseRequestURI(new_url.Url)
+	if err != nil {
+		http.Error(w, "Invalid Url format",http.StatusBadRequest)
+		return
+	}
+	api.Pool.Mux.Lock()
+	defer api.Pool.Mux.Unlock()
+
+	for i, backend := range api.Pool.Backends {
+		if parsedURL.String() == backend.URL.String() {
+			api.Pool.Backends = append(api.Pool.Backends[:i],api.Pool.Backends[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+				fmt.Print("test")
+
+			fmt.Println(len(api.Pool.Backends))
+			return
+		}
+	}
+	http.Error(w, "Backend Not Found", http.StatusNotFound)
+}
+
+
 func (api *API) Handler(w http.ResponseWriter, r *http.Request){
 	
 	switch r.Method {
@@ -98,6 +143,8 @@ func (api *API) Handler(w http.ResponseWriter, r *http.Request){
 			api.HandleGet(w,r)
 		case http.MethodPost:
 			api.HandlePost(w,r)
+		case http.MethodDelete:
+			api.HandleDelete(w,r)
 		default:
 			fmt.Print("Oops")
 	}
