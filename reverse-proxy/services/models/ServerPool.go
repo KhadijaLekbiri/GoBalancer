@@ -3,17 +3,21 @@ package models
 import (
 	"fmt"
 	"net/url"
+	"sync"
 	"sync/atomic"
 )
 
 type ServerPool struct {
 	Backends []*Backend `json:"backends"`
 	Current uint64 `json:"current"` // Used for Round-Robin
+	Mux sync.RWMutex
 }
 
 
 func (pool *ServerPool) GetNextValidPeer() *Backend {
-
+	pool.Mux.RLock()
+	defer pool.Mux.RUnlock()
+	
 	backends := pool.Backends
 
 	n := len(backends)
@@ -36,14 +40,22 @@ func (pool *ServerPool) GetNextValidPeer() *Backend {
 }
 
 func (pool *ServerPool) AddBackend(backend *Backend) {
+	pool.Mux.Lock()
+	defer pool.Mux.Unlock()
 	pool.Backends = append(pool.Backends, backend)
 }
 
 
 func (pool *ServerPool) SetBackendStatus(uri *url.URL, alive bool) {
-	for _ ,server := range pool.Backends {
+
+	pool.Mux.Lock()
+	backends := pool.Backends
+
+	for _ ,server := range backends {
 		if server.URL.String() == uri.String() {
 			server.SetAlive(alive)
 		}
 	}
+	
+	defer pool.Mux.Unlock()
 }
