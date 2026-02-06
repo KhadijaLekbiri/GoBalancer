@@ -43,12 +43,15 @@ func (pool *ServerPool) AddBackend(backend *Backend) {
 	pool.Mux.Lock()
 	defer pool.Mux.Unlock()
 	pool.Backends = append(pool.Backends, backend)
+	backend.SetAlive(backend.Alive)
 }
 
 
 func (pool *ServerPool) SetBackendStatus(uri *url.URL, alive bool) {
 
 	pool.Mux.Lock()
+	defer pool.Mux.Unlock()
+
 	backends := pool.Backends
 
 	for _ ,server := range backends {
@@ -57,5 +60,19 @@ func (pool *ServerPool) SetBackendStatus(uri *url.URL, alive bool) {
 		}
 	}
 	
-	defer pool.Mux.Unlock()
+}
+
+func (pool *ServerPool) Activate_backends(){
+	pool.Mux.RLock()
+
+	backends := make([]*Backend, len(pool.Backends))
+	copy(backends,pool.Backends)
+
+	pool.Mux.RUnlock()
+
+	for _, backend := range backends {
+		if backend.Alive {
+			backend.StartBackend()
+		}
+	}
 }
