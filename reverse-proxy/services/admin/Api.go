@@ -80,11 +80,25 @@ func (api *API) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	err = json.Unmarshal([]byte(body), &new_url)
 
-	url, _ := url.ParseRequestURI(new_url.Url)
+	url, err := url.ParseRequestURI(new_url.Url)
+	if err != nil {
+		http.Error(w, "Invalid URL", http.StatusBadRequest)
+		return
+	}
+
+	for _, b := range api.Pool.Backends {
+		if b.URL.String() == url.String() {
+			w.WriteHeader(http.StatusConflict)
+			json.NewEncoder(w).Encode(map[string]string{
+                "error": "Backend already exists",
+            })
+			return
+		}
+	}
 
 	newBackend := models.Backend{
 		URL: url,
-		Alive: false,
+		Alive: true,
 		CurrentConns: 0,
 	}
 
