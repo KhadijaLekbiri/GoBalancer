@@ -7,9 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reverse-proxy/services/admin"
 	"reverse-proxy/services/models"
 	"reverse-proxy/services/proxy"
-	"reverse-proxy/services/admin"
+	"strings"
 	"sync"
 	"time"
 )
@@ -79,10 +80,13 @@ func main() {
 
 	fmt.Println(initial_proxy.Strategy)
 
+
 	server_pool := models.ServerPool {
 			Backends: models.Backends(),
 			Current: ^uint64(0) , // max unit64 + 1 gives 0 thanks to the overflow
 		}
+	server_pool.Activate_backends()
+
 	wg.Add(1)
 
 	go func (){
@@ -115,13 +119,20 @@ func main() {
 		defer wg.Done()
 		ticker2 := time.NewTicker(20*time.Second)
 
+		port := 8087
 		for range ticker2.C {
-			backend := &models.Backend {
-				URL:          models.Must(fmt.Sprintf("http://localhost:%d",8087)),
-				Alive:        true,
-				CurrentConns: 0,
+			jsonData := fmt.Sprintf(`{"url": "http://localhost:%d"}`, port)
+			
+			resp, err := http.Post("http://localhost:8081/backends", "application/json", strings.NewReader(jsonData))
+			if err != nil {
+				log.Println("Failed to add backend: ", err)
+				continue
 			}
-			server_pool.AddBackend(backend)
+			
+			log.Println("Added backend on port", port, "status:", resp.Status)
+			resp.Body.Close()
+		
+			port++
 		}
 	}()
 	wg.Wait()
