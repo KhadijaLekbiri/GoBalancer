@@ -1,7 +1,6 @@
 package models
 
 import (
-	"fmt"
 	"net/url"
 	"sync"
 	"sync/atomic"
@@ -31,7 +30,6 @@ func (pool *ServerPool) GetNextValidPeer() *Backend {
 		index := int(next) % n
 
 		if backends[index].IsAlive() {
-			fmt.Println("slm: ",pool.Current) 
 			return backends[index]
 		}
 	}
