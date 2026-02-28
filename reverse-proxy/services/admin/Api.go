@@ -31,7 +31,6 @@ type BackendResponse struct {
 }
 
 func (api *API) HandleGet(w http.ResponseWriter, _ *http.Request){
-	fmt.Printf("helooooooo")
 	
 	api.Pool.Mux.RLock()
 	defer api.Pool.Mux.RUnlock()
@@ -109,7 +108,6 @@ func (api *API) HandlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func  (api *API) HandleDelete(w http.ResponseWriter, r *http.Request){
-	fmt.Println("hhh deleted")
 
 	new_url := struct {
 		Url string  `json:"url"`}{
@@ -140,9 +138,7 @@ func  (api *API) HandleDelete(w http.ResponseWriter, r *http.Request){
 		if parsedURL.String() == backend.URL.String() {
 			api.Pool.Backends = append(api.Pool.Backends[:i],api.Pool.Backends[i+1:]...)
 			w.WriteHeader(http.StatusNoContent)
-				fmt.Print("test")
-
-			fmt.Println(len(api.Pool.Backends))
+			fmt.Println("Backend successfully deleted!")
 			return
 		}
 	}
