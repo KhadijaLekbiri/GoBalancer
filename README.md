@@ -1,6 +1,6 @@
 # Concurrent Load-Balancing Reverse Proxy
 
-A production-grade reverse proxy server built in Go featuring intelligent load balancing, automated health monitoring, and dynamic backend management.
+A reverse proxy server built in Go featuring intelligent load balancing, automated health monitoring, and dynamic backend management.
 
 ## 🎓 Project Context
 
@@ -63,7 +63,7 @@ This is my final project for an **Introduction to Go** course, demonstrating adv
 ```bash
 # Clone the repository
 git clone https://github.com/KhadijaLekbiri/GoBalancer.git
-cd reverse-proxy
+cd GoBalancer
 
 # Initialize Go modules
 go mod init reverse-proxy
@@ -74,20 +74,17 @@ go mod tidy
 
 ### Configuration
 
-Create a `config.json` file in the project root:
+A `config.json` file is included in the repository with the following structure:
 
 ```json
 {
-  "port": 8080,
-  "strategy": "round-robin",
-  "health_check_frequency": "30s",
-  "backends": [
-    "http://localhost:8082",
-    "http://localhost:8083",
-    "http://localhost:8084"
-  ]
+  "Port": 8080,
+  "Strategy": "round-robin",
+  "Admin_port": 8081
 }
 ```
+
+Adjust the values as needed before running the proxy.
 
 ### Running the Proxy
 
@@ -103,28 +100,13 @@ go build -o proxy main.go
 ./proxy --config=config.json
 ```
 
-### Setting Up Test Backends
-
-Create simple test servers to proxy to:
-
-```bash
-# Terminal 1
-go run examples/backend.go -port 8082
-
-# Terminal 2
-go run examples/backend.go -port 8083
-
-# Terminal 3
-go run examples/backend.go -port 8084
-```
-
 ## 📖 Usage
 
 ### Making Requests Through the Proxy
 
 ```bash
 # Send a request through the proxy
-curl http://localhost:8080/api/users
+curl http://localhost:8080/api
 
 # The proxy will forward to one of the healthy backends
 ```
@@ -183,75 +165,38 @@ curl -X DELETE http://localhost:8081/backends \
 ## 🏛️ Project Structure
 
 ```
-reverse-proxy/
-├── Client.go                 # Entry point
-├── config.json            # Configuration file
-├── TODO.md               # Development milestones
+GoBalancer/
+├── main.go                    # Entry point
+├── config.json                # Configuration file
 ├── README.md
-├── services/
-│   ├── models/           # Data structures and interfaces
-│   │   ├── Backend.go
-│   │   ├── ServerPool.go
-│   │   └── ProxyConfig.go
-│   ├── proxy/            # Proxy handler logic
-│   │   └── Handler.go
-│   ├── health/           # Health checking system
-│   │   └── checker.go
-│   └── admin/            # Admin API handlers
-│       └── api.go
-├── examples/
-│   └── backend.go        # Sample backend server
-└── tests/
-    └── integration_test.go
-```
-
-## 🧪 Testing
-
-### Run Unit Tests
-
-```bash
-go test ./... -v
-```
-
-### Run with Race Detector
-
-```bash
-go test ./... -race -v
-```
-
-### Integration Testing
-
-```bash
-# Start the proxy and backends, then run
-go test ./tests -integration -v
-```
-
-### Load Testing
-
-```bash
-# Using Apache Bench
-ab -n 10000 -c 100 http://localhost:8080/
-
-# Using hey
-hey -n 10000 -c 100 http://localhost:8080/
+└── services/
+    ├── models/                # Data structures and interfaces
+    │   ├── Backend.go
+    │   ├── LoadBalancer.go
+    │   ├── ServerPool.go
+    │   └── ProxyConfig.go
+    ├── proxy/                 # Proxy handler logic
+    │   └── Handler.go
+    ├── health/                # Health checking system
+    │   └── checker.go
+    └── admin/                 # Admin API handlers
+        └── Api.go
 ```
 
 ## 🔧 Configuration Options
 
 | Field | Type | Description | Default |
 |-------|------|-------------|---------|
-| `port` | int | Proxy server port | 8080 |
-| `strategy` | string | Load balancing strategy (`round-robin`, `least-conn`) | round-robin |
-| `health_check_frequency` | duration | Health check interval | 30s |
-| `backends` | []string | Initial backend URLs | [] |
-| `admin_port` | int | Admin API port | 8081 |
-| `request_timeout` | duration | Backend request timeout | 10s |
+| `Port` | int | Proxy server port | 8080 |
+| `Strategy` | string | Load balancing strategy (`round-robin`) | `round-robin` |
+| `health_check_frequency` | duration | Health check interval | `30s` |
+| `backends` | []string | Initial backend URLs | `[]` |
+| `Admin_port` | int | Admin API port | 8081 |
+| `request_timeout` | duration | Backend request timeout | `10s` |
 
 ## 🎯 Project Status
 
-✅ **In Progress** - All core features implemented and tested
-
-See [TODO.md](TODO.md) for detailed development milestones and progress tracking.
+✅ **Complete** — All core features implemented and tested.
 
 ## 🚀 Future Enhancements
 
@@ -267,6 +212,6 @@ See [TODO.md](TODO.md) for detailed development milestones and progress tracking
 
 This project is part of an academic assignment and is available for educational purposes.
 
+---
 
-
-⭐ If you found this project helpful, please consider giving it a star!
+⭐ If you found this project interesting, please consider giving it a star!
